@@ -1,0 +1,10 @@
+Notes on Cypress Cap sensor
+
+PSoC 4100 does not use CSX (cross point sensor)
+UDB = universal digital blocks (UDBs) for efficient implementation of programmable peripheral
+
+PSoC 4100 family does not support CSX sensing method since 
+it does not have UDB resources which is required to implement CSX for this family
+
+CPU on PSoC 6 Wi-Fi BT Prototyping Board:
+CY8C624ABZI-D44
