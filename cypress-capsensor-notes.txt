@@ -7,4 +7,108 @@ PSoC 4100 family does not support CSX sensing method since
 it does not have UDB resources which is required to implement CSX for this family
 
 CPU on PSoC 6 Wi-Fi BT Prototyping Board:
-CY8C624ABZI-D44
+CY8C624ABZI-D44 Series	PSoC 62
+PSoC 6 Wi-Fi BT Prototyping Kit (CY8CPROTO-062-4343W)
+
+ModusToolbox directory:/users/ronf/ModusToolbox (capsense_tuner.exe)
+
+
+
+Changing icon size: right on IDE, select compatibility, override high DPI
+
+
+July 8, 2020
+
+ Cy_CapSense_CSXScan_Call(context);
+ work done by this interrupt?
+ capsense_isr(void);
+ cy_capsense_sensing.c: Cy_CapSense_InterruptHandler(CYBSP_CSD_HW, &cy_capsense_context);
+  context->ptrActiveScanSns->ptrISRCallback((void *)context);
+ cy_capsense_structure.h:
+	void (* ptrISRCallback)(void * context);  /**< Pointer to the interrupt handler of the active sensor */
+
+cy_capsense_csx.c:
+/* Enable the CSD HW block interrupt and set interrupt vector to CSX sensing method */
+	context->ptrActiveScanSns->ptrISRCallback = ptrFptrCfg->fptrCSXScanISR;
+cy_capsense_structure.h:	
+	 cy_func_capsense_csx_scan_isr_ptr_t fptrCSXScanISR;         /**< The Cy_CapSense_CSXScanISR() function pointer*/
+	fptrCSXScanISR
+
+renamed to ptrFptrConfig
+line 91: cy_stc_capsense_fptr_config_t * ptrFptrCfg = (cy_stc_capsense_fptr_config_t *)context->ptrFptrConfig;
+
+Initializes interface between Tuner GUI and PSoC 6 MCU.
+uses I2C???
+400 kHZ data rate
+
+Interrupts:
+capsense_isr ==> Cy_CapSense_InterruptHandler(CYBSP_CSD_HW, &cy_capsense_context) ==> 
+	context->ptrActiveScanSns->ptrISRCallback((void *)context); ==> Cy_CapSense_CSXScanISR(void * capsenseContext)
+
+
+typedef struct 
+ void (* ptrISRCallback)(void * context);                    /**< Pointer to the interrupt handler of the active sensor */
+cy_stc_active_scan_sns_t;
+
+structure context-> ptrActiveScanSns -> ptrISRCallback
+This is set to Cy_CapSense_CSXScanISR
+
+2. Using CapSense Tuner 3.0, I2C at 400 kbits/sec
+ronf/modus/
+design.cycapsense is in libs/TARGET_CY8CPROTO-062-4343W/COMPONENT_BSP_DESIGN_MODUS
+(can also double click on design.cycapsense in Modus.
+ => Advanced => CSD Settings => Modulator clock frequency 50MHz, divider 2.
+Cy_CapSense_SetClkDivider()
+
+AN85951
+3. Longer conversion time (see Equation 5-7, Equation 5-5) 
+
+7.1 Firmware
+The PSoC CapSense Component provides multiple application programming interfaces to simplify firmware development. 
+The CapSense Component Datasheet provides a detailed list and explanation of the available APIs. 
+Table 7-14. Sensor Scan Time 
+The sensor-scan time depends on the scan resolution and modulator clock divider (See Equation 3-5). 
+10 bits gives 85 us per cell. 
+Hardware scan time = (2^Resolution − 1)/Modulator Clock Frequency ⁄ 
+example: 10 bit resolution 1023/12 MHz = 85 us.
+where is clock speed set?
+Cy_CapSense_SetClkDivider()
+cy_capsense_csx.c: SetClkDivider()
+--------------------
+
+AN64846:
+The programmable devices allow complex system-level integration. 
+These controllers can process the raw count data as well as perform other system functions.  
+
+------------------
+
+looks like cortex M4 is handling cap sensor- should be able to directly access using Peripheral connect
+
+July 9, 2020
+
+How to printf?
+#include "cy_retarget_io.h"
+/* UART HAL object used by Retarget-IO for Debug UART port */
+extern cyhal_uart_t cy_retarget_io_uart_obj;
+
+https://github.com/cypresssemiconductorco/capsense
+https://cypresssemiconductorco.github.io/capsense/capsense_api_reference_manual/html/index.html
+
+AN215656 – PSoC 6 MCU: Dual-CPU System Design | 
+Describes the dual-CPU architecture in PSoC 6 MCU, and shows how to build a simple dual-CPU design 
+https://www.cypress.com/documentation/application-notes/an215656-psoc-6-mcu-dual-cpu-system-design
+https://www.cypress.com/documentation/application-notes/an228571-getting-started-psoc-6-mcu-modustoolbox
+
+re-targetIO is under Quick Panel ==> Documentation ==> Retarget IO
+NOTE: If the application is built using newlib-nano, by default, floating point format strings (f) are not supported. 
+To enable this support, you must add -u _printf_float to the linker command line.
+
+Need to link in retarget-io library???
+LibraryManager 1.1==> Libraries ==> Board Utils ==> retarget-io
+
+Timing (for slider and 2 switches).
+40000 loops in 30 seconds. 1333 scans/second, with 7 elements per scan. ==> 107 us/elements
+Try without cap tune: same
+CapSenseConfigurator==> Advanced ==> CSX ==> widget details Tx clock divider was 32 now 20.
+
+
