@@ -109,6 +109,6 @@ LibraryManager 1.1==> Libraries ==> Board Utils ==> retarget-io
 Timing (for slider and 2 switches).
 40000 loops in 30 seconds. 1333 scans/second, with 7 elements per scan. ==> 107 us/elements
 Try without cap tune: same
-CapSenseConfigurator==> Advanced ==> CSX ==> widget details Tx clock divider was 32 now 20.
+CapSenseConfigurator==> Advanced ==> CSX ==> widget details Tx clock divider was 32 now 20., subconversions 100==>50.
 
 
