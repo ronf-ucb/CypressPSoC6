@@ -111,4 +111,88 @@ Timing (for slider and 2 switches).
 Try without cap tune: same
 CapSenseConfigurator==> Advanced ==> CSX ==> widget details Tx clock divider was 32 now 20., subconversions 100==>50.
 
+create PWM application- ok
+
+July 10, 2020
+Add touch pad using CapSense Configurator
+Looks like J5 is available for touch pad wires 4x4?
+Try CSX 4x4 touch pad.
+Had to change Tx freq divide to 17 (50 MHz/17 = 3MHz max TX clock)
+Test with Capsense tuner?
+Crashes with retargetIO
+ The Tuner works with I2C and UART communication interfaces.  - so should try without retargetIO 
+ (or print to console instead of terminal)
+ create new copy of capsense example w/o IO to try using cap tune. (Then add touch pad later)
+ CapTuner ==> tools ==> comm setup I2C, then connect, then started comm.
+ 
+ try configurator again, adding 4x4 touch pad
+ slider works but other two buttons stopped
+ using CapSenseTuner, button1 is alwyas > 100 now. (Maybe changing Tx timing affected this?)
+ Saw pattern for 4x4, but no values were read.
+ 
+ Reading values, is there API? CapSense Middleware?
+ https://cypresssemiconductorco.github.io/capsense/capsense_api_reference_manual/html/index.html
+ 
+ The 'cy_capsense_context' variable that is used as the parameter of the
+* Cy_CapSense_Init() and Cy_CapSense_Enable() functions is declared in the
+* cycfg_capsense.h file.
+main data structure: extern cy_stc_capsense_context_t cy_capsense_context;
+
+ July 11, 2020
+ 
+You can access the raw counts through the dsRam structure. The code for this would be:
+raw = CapSense_dsRam.snsList.touchpad0[index].raw[FreqIndex];
+
+elements_IDs[i] = CapSense_dsRam.snsList.touchpad0[1].raw[0];
+For low level details See:
+https://www.cypress.com/file/397251/download
+p. 100:
+1.Direct Access
+The access to registers is performed through the Data Structure variable CapSense_dsRam and 
+constants CapSense_dsFlash from application program.
+Example of access to the Raw Count register of third sensor of Button0 widget: 
+rawCount = CapSense_dsRam.snsList.button0[CapSense_BUTTON0_SNS2_ID].raw[0]
+
+https://www.cypress.com/documentation/component-datasheets
+PSoC_6_capacitive_Sensing3.0.pdf
+
+Now retarget_IO hangs on 
+ if (result != CY_RSLT_SUCCESS)     {         CY_ASSERT(0);     }
+ returned 0x4020101 instead of zero...
+ gave error in cyhal_uart_init()
+ cyhal_uart.c: result = _cyhal_utils_reserve_and_connect(tx, tx_map);
+ hwmgr_reserve ok
+ Failed on reserving pin, type CYHAL_RSC_GPIO, block 5, channel 1
+ cyhal_hwmgr_reserve(&pinRsc);
+ pin resources not freed between runs???
+ Pin 5.1 was reserved for cap sensor touch array, so blocking UART!
+cyhal_resource_inst_t
+/** The requested resource type is invalid */
+CYHAL_HWMGR_RSLT_ERR_INUSE;
+    
+How to see what pins are being used
+Device Configurator shows pins- with cap sense, no pins configured for UART...
+Hello World 
+(Device Configurator and all tools disappeared...)
+(Click on upper right ``Modulus Toolbox'')
+file with pins is *.modus
+
+==> PSoC 6 Wi-Fi BT Prototyping Kit Guide shows used pins.
+P50..3 is used for UART RX,TX, RTS, CTS, so that caused conflict
+try 2x2 with p5.4 to P5.7
+HAL= hardware abstraction layer
+initialize cap sense came before retarget_io, so had conflict on p5.1
+still gives conflict error.
+p5.0 still in pin configuration? Try clean then build.
+
+What pins does hello-world use?
+Port 5 is unassigned
+Tools disappeared again- use restart.
+
+Used configurator to remove P5.0-P5.3 which conflicted with UART. (and stayed in file even after clean.)
+(need to make sure I2C available).
+I2C stopped working for some reason.
+
+
+	
 
